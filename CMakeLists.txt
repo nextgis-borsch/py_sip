@@ -33,8 +33,8 @@ set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(util)
-check_version(SIP_MAJOR_VERSION SIP_MINOR_VERSION)
-set(VERSION "${SIP_MAJOR_VERSION}.${SIP_MINOR_VERSION}")
+check_version(SIP_MAJOR_VERSION SIP_MINOR_VERSION SIP_PATCH_VERSION)
+set(VERSION "${SIP_MAJOR_VERSION}.${SIP_MINOR_VERSION}.${SIP_PATCH_VERSION}")
 report_version(${PROJECT_NAME} ${VERSION})
 
 set(CONFIGURE_ARGS --destdir ${CMAKE_INSTALL_PREFIX})
@@ -52,7 +52,11 @@ set(CONFIGURE_ARGS ${CONFIGURE_ARGS} --bindir ${CMAKE_INSTALL_PREFIX}/bin)
 set(CONFIGURE_ARGS ${CONFIGURE_ARGS} --incdir ${CMAKE_INSTALL_PREFIX}/include)
 set(CONFIGURE_ARGS ${CONFIGURE_ARGS} --sipdir ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME})
 
-set(SIP_INPUT_NAME "sip-${SIP_MAJOR_VERSION}.${SIP_MINOR_VERSION}")
+if(SIP_PATCH_VERSION EQUAL 0)
+    set(SIP_INPUT_NAME "sip-${SIP_MAJOR_VERSION}.${SIP_MINOR_VERSION}")
+else()
+    set(SIP_INPUT_NAME "sip-${SIP_MAJOR_VERSION}.${SIP_MINOR_VERSION}.${SIP_PATCH_VERSION}")
+endif()
 set(DOWNLOAD_URL "https://sourceforge.net/projects/pyqt/files/sip/${SIP_INPUT_NAME}")
 if(WIN32)
     # https://sourceforge.net/projects/pyqt/files/sip/sip-4.19/sip-4.19.zip
@@ -61,7 +65,7 @@ else()
     # https://sourceforge.net/projects/pyqt/files/sip/sip-4.19/sip-4.19.tar.gz
     set(DOWNLOAD_URL "${DOWNLOAD_URL}/${SIP_INPUT_NAME}.tar.gz")
 endif()
-set(OUT_NAME "sip.tar.gz")
+set(OUT_NAME "sip-${VERSION}.tar.gz")
 
 if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME}")
     status_message("Download ${DOWNLOAD_URL}")

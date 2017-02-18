@@ -24,18 +24,20 @@
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
 
-function(check_version major minor)
+function(check_version major minor patch)
 
     set(CHECK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/util.cmake)
     set(MAJOR_VERSION 4)
     set(MINOR_VERSION 19)
+    set(PATCH_VERSION 1)
 
     set(${major} ${MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${MINOR_VERSION} PARENT_SCOPE)
+    set(${patch} ${PATCH_VERSION} PARENT_SCOPE)
 
     # Store version string in file for installer needs
     file(TIMESTAMP ${CHECK_FILE} VERSION_DATETIME "%Y-%m-%d %H:%M:%S" UTC)
-    file(WRITE ${CMAKE_BINARY_DIR}/version.str "${MAJOR_VERSION}.${MINOR_VERSION}\n${VERSION_DATETIME}")
+    file(WRITE ${CMAKE_BINARY_DIR}/version.str "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}\n${VERSION_DATETIME}")
 
 endfunction(check_version)
 
