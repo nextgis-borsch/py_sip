@@ -95,16 +95,27 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} configure.py ${CONFIGURE_ARGS}
 )
 
 #TODO: Fix on WINDOWS
-add_custom_target(build_qt ALL make -j ${CPU_COUNT}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
-    VERBATIM
-)
-
-install(CODE "execute_process(
-              COMMAND make install
-              WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
-             )"
-)
+if(WIN32)
+    add_custom_target(build_qt ALL nmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
+        VERBATIM
+    )
+    install(CODE "execute_process(
+                  COMMAND nmake install
+                  WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
+                 )"
+    )
+else(WIN32)
+    add_custom_target(build_qt ALL make -j ${CPU_COUNT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
+        VERBATIM
+    )
+    install(CODE "execute_process(
+                  COMMAND make install
+                  WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/${SIP_INPUT_NAME}
+                 )"
+    )
+endif(WIN32)
 
 if (REGISTER_PACKAGE)
     set(INSTALL_INC_DIR ${CMAKE_INSTALL_PREFIX}/include)
