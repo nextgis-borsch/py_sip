@@ -1,9 +1,9 @@
 ################################################################################
-# Project:  Lib jbig
+# Project:  Python package generator
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, dmitry.baryshnikov@nexgis.com
 ################################################################################
-# Copyright (C) 2017, NextGIS <info@nextgis.com>
+# Copyright (C) 2017-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -29,7 +29,7 @@ function(check_version major minor patch)
     set(CHECK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/util.cmake)
     set(MAJOR_VERSION 4)
     set(MINOR_VERSION 19)
-    set(PATCH_VERSION 1)
+    set(PATCH_VERSION 8)
 
     set(${major} ${MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${MINOR_VERSION} PARENT_SCOPE)
@@ -37,10 +37,11 @@ function(check_version major minor patch)
 
     # Store version string in file for installer needs
     file(TIMESTAMP ${CHECK_FILE} VERSION_DATETIME "%Y-%m-%d %H:%M:%S" UTC)
-    file(WRITE ${CMAKE_BINARY_DIR}/version.str "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}\n${VERSION_DATETIME}")
+    set(VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
+    get_cpack_filename(${VERSION} PROJECT_CPACK_FILENAME)
+    file(WRITE ${CMAKE_BINARY_DIR}/version.str "${VERSION}\n${VERSION_DATETIME}\n${PROJECT_CPACK_FILENAME}")
 
 endfunction(check_version)
-
 
 function(report_version name ver)
 
@@ -48,7 +49,7 @@ function(report_version name ver)
     set(BoldYellow  "${Esc}[1;33m")
     set(ColourReset "${Esc}[m")
 
-    message(STATUS "${BoldYellow}${name} version ${ver}${ColourReset}")
+    message("${BoldYellow}${name} version ${ver}${ColourReset}")
 
 endfunction()
 
@@ -71,4 +72,34 @@ function(warning_message text)
 
     message(STATUS "${BoldGreen}${text}${ColourReset}")
 
+endfunction()
+
+function(get_cpack_filename ver name)
+get_compiler_version(COMPILER)
+if(BUILD_STATIC_LIBS)
+    set(STATIC_PREFIX "static-")
+endif()
+
+set(${name} ${PROJECT_NAME}-${STATIC_PREFIX}${ver}-${COMPILER} PARENT_SCOPE)
+endfunction()
+
+function(get_compiler_version ver)
+## Limit compiler version to 2 or 1 digits
+string(REPLACE "." ";" VERSION_LIST ${CMAKE_C_COMPILER_VERSION})
+list(LENGTH VERSION_LIST VERSION_LIST_LEN)
+if(VERSION_LIST_LEN GREATER 2 OR VERSION_LIST_LEN EQUAL 2)
+    list(GET VERSION_LIST 0 COMPILER_VERSION_MAJOR)
+    list(GET VERSION_LIST 1 COMPILER_VERSION_MINOR)
+    set(COMPILER ${CMAKE_C_COMPILER_ID}-${COMPILER_VERSION_MAJOR}.${COMPILER_VERSION_MINOR})
+else()
+    set(COMPILER ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION})
+endif()
+
+if(WIN32)
+    if(CMAKE_CL_64)
+        set(COMPILER "${COMPILER}-64bit")
+    endif()
+endif()
+
+set(${ver} ${COMPILER} PARENT_SCOPE)
 endfunction()
