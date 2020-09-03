@@ -52,9 +52,16 @@ endif()
 
 set(INSTALL_CMAKECONF_DIR CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 
-find_package (Python3 COMPONENTS Interpreter)
+# Hack, not find python3 withouut this
+find_program(PYTHON3_EXECUTABLE python3)
+set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
 
-if(NOT Python3_FOUND)
+find_package(PythonInterp 3)
+if(PYTHONINTERP_FOUND)
+    set(Python3_EXECUTABLE ${PYTHON_EXECUTABLE})
+    set(Python3_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
+    set(Python3_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+else()
     message(FATAL_ERROR "Cannot find python 3")
 endif()
 
