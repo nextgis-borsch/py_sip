@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, dmitry.baryshnikov@nexgis.com
 ################################################################################
-# Copyright (C) 2017-2018, NextGIS <info@nextgis.com>
+# Copyright (C) 2017-2020, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -52,53 +52,10 @@ endif()
 
 set(INSTALL_CMAKECONF_DIR CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 
-if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
-    set(WITH_PYTHON2 ON)
-endif()
+find_package (Python3 COMPONENTS Interpreter)
 
-if(WITH_PYTHON2)
-    find_package(PythonInterp 2)
-    if(PYTHONINTERP_FOUND)
-        set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
-        set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
-        set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
-    else()
-        message(WARNING "Cannot find python 2")
-    endif()
-endif()
-
-unset(PYTHONINTERP_FOUND)
-unset(PYTHON_EXECUTABLE)
-unset(PYTHON_VERSION_MAJOR)
-unset(PYTHON_VERSION_MINOR)
-
-if(WITH_PYTHON3)
-    # Hack, not find python3 withouut this
-    find_program(PYTHON3_EXECUTABLE python3)
-    set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
-
-    find_package(PythonInterp 3)
-    if(PYTHONINTERP_FOUND)
-        set(PYTHON3_EXECUTABLE ${PYTHON_EXECUTABLE})
-        set(PYTHON3_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
-        set(PYTHON3_VERSION_MINOR ${PYTHON_VERSION_MINOR})
-    else()
-        message(WARNING "Cannot find python 3")
-    endif()
-endif()
-
-if(NOT PYTHON2_EXECUTABLE AND NOT PYTHON3_EXECUTABLE)
-    message(FATAL_ERROR "Cannot find python")
-endif()
-
-if(PYTHON2_EXECUTABLE)
-    set(PYTHON_EXECUTABLE ${PYTHON2_EXECUTABLE})
-    set(PYTHON_VERSION_MAJOR ${PYTHON2_VERSION_MAJOR})
-    set(PYTHON_VERSION_MINOR ${PYTHON2_VERSION_MINOR})
-else()
-    set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
-    set(PYTHON_VERSION_MAJOR ${PYTHON3_VERSION_MAJOR})
-    set(PYTHON_VERSION_MINOR ${PYTHON3_VERSION_MINOR})
+if(NOT Python3_FOUND)
+    message(WARNING "Cannot find python 3")
 endif()
 
 include(util)
@@ -171,9 +128,9 @@ endif()
 set(TMP_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/inst_tmp")
 
 if(OSX_FRAMEWORK)
-    set(INSTALL_PYTHON_DIR Library/Python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
+    set(INSTALL_PYTHON_DIR Library/Python/${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages)
 else()
-    set(INSTALL_PYTHON_DIR lib/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}/site-packages)
+    set(INSTALL_PYTHON_DIR lib/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}/site-packages)
 endif()
 set(CONFIGURE_ARGS --destdir ${TMP_INSTALL_PREFIX}/${INSTALL_PYTHON_DIR})
 
@@ -193,51 +150,39 @@ set(CONFIGURE_ARGS ${CONFIGURE_ARGS} --sipdir ${TMP_INSTALL_PREFIX}/share/${PROJ
 
 message(STATUS "Configure args: ${CONFIGURE_ARGS}")
 
-macro(build_py ver)
+add_custom_target(configure_py3 ALL
+    COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
+    ${Python3_EXECUTABLE} configure.py ${CONFIGURE_ARGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+    VERBATIM
+)
 
-    add_custom_target(configure_py${ver} ALL
-        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
-        ${PYTHON${ver}_EXECUTABLE} configure.py ${CONFIGURE_ARGS}
+if(WIN32)
+    add_custom_target(build_py3 ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" nmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        DEPENDS configure_py3
         VERBATIM
     )
-
-    if(WIN32)
-        add_custom_target(build_py${ver} ALL
-            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" nmake
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
-            DEPENDS configure_py${ver}
-            VERBATIM
-        )
-        add_custom_target(install_py${ver} ALL
-            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" nmake install
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
-            DEPENDS build_py${ver}
-            VERBATIM
-        )
-    else()
-        add_custom_target(build_py${ver} ALL
-            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" make
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
-            DEPENDS configure_py${ver}
-            VERBATIM
-        )
-        add_custom_target(install_py${ver} ALL
-            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" make install
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
-            DEPENDS build_py${ver}
-            VERBATIM
-        )
-    endif()
-
-endmacro()
-
-if(PYTHON2_EXECUTABLE)
-    build_py(2)
-endif()
-
-if(PYTHON3_EXECUTABLE)
-    build_py(3)
+    add_custom_target(install_py3 ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" nmake install
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        DEPENDS build_py3
+        VERBATIM
+    )
+else()
+    add_custom_target(build_py3 ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" make
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        DEPENDS configure_py3
+        VERBATIM
+    )
+    add_custom_target(install_py3 ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}" make install
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        DEPENDS build_py3
+        VERBATIM
+    )
 endif()
 
 set(PACKAGE_NAME ${PROJECT_NAME})
