@@ -55,7 +55,7 @@ set(INSTALL_CMAKECONF_DIR CMake CACHE INTERNAL "Installation directory for cmake
 find_package (Python3 COMPONENTS Interpreter)
 
 if(NOT Python3_FOUND)
-    message(WARNING "Cannot find python 3")
+    message(FATAL_ERROR "Cannot find python 3")
 endif()
 
 include(util)
